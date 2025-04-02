@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	headerData  = []byte("data: ")
+	headerData  = []byte("data:")
 	errorPrefix = []byte(`data: {"error":`)
 )
 
@@ -90,6 +90,7 @@ func (stream *streamReader[T]) processLines() ([]byte, error) {
 		}
 
 		noPrefixLine := bytes.TrimPrefix(noSpaceLine, headerData)
+		noPrefixLine = bytes.TrimPrefix(noPrefixLine, []byte(" "))
 		if string(noPrefixLine) == "[DONE]" {
 			stream.isFinished = true
 			return nil, io.EOF
