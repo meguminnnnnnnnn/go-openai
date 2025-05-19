@@ -276,6 +276,23 @@ type ChatCompletionRequest struct {
 	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 	// Metadata to store with the completion.
 	Metadata map[string]string `json:"metadata,omitempty"`
+
+	// Extra fields to be sent in the request.
+	// Useful for experimental features not yet officially supported.
+	extraFields map[string]any
+}
+
+// SetExtraFields adds extra fields to the JSON object.
+//
+// SetExtraFields will override any existing fields with the same key.
+// For security reasons, ensure this is only used with trusted input data.
+func (r *ChatCompletionRequest) SetExtraFields(extraFields map[string]any) {
+	r.extraFields = extraFields
+}
+
+// GetExtraFields returns the extra fields set in the request.
+func (r *ChatCompletionRequest) GetExtraFields() map[string]any {
+	return r.extraFields
 }
 
 type StreamOptions struct {
