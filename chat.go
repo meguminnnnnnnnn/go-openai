@@ -95,6 +95,7 @@ const (
 	ChatMessagePartTypeImageURL   ChatMessagePartType = "image_url"
 	ChatMessagePartTypeInputAudio ChatMessagePartType = "input_audio"
 	ChatMessagePartTypeVideoURL   ChatMessagePartType = "video_url"
+	ChatMessagePartTypeVideo      ChatMessagePartType = "video"
 )
 
 type ChatMessagePart struct {
@@ -103,6 +104,7 @@ type ChatMessagePart struct {
 	ImageURL   *ChatMessageImageURL   `json:"image_url,omitempty"`
 	InputAudio *ChatMessageInputAudio `json:"input_audio,omitempty"`
 	VideoURL   *ChatMessageVideoURL   `json:"video_url,omitempty"`
+	Video      []string               `json:"video,omitempty"`
 }
 
 type ChatCompletionMessage struct {
