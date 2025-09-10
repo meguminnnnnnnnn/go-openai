@@ -138,7 +138,17 @@ type ChatCompletionMessage struct {
 	// For Role=tool prompts this should be set to the ID given in the assistant's prior request to call a tool.
 	ToolCallID string `json:"tool_call_id,omitempty"`
 
+	// Audio is the audio response from the model, returned only when the audio output modality is requested.
+	Audio *Audio `json:"audio,omitempty"`
+
 	ExtraFields map[string]json.RawMessage `json:"-"`
+}
+
+type Audio struct {
+	ID         string `json:"id,omitempty"`
+	Data       string `json:"data,omitempty"`
+	ExpiresAt  int64  `json:"expires_at,omitempty"`
+	Transcript string `json:"transcript,omitempty"`
 }
 
 func (m ChatCompletionMessage) MarshalJSON() ([]byte, error) {
@@ -156,6 +166,7 @@ func (m ChatCompletionMessage) MarshalJSON() ([]byte, error) {
 			FunctionCall     *FunctionCall              `json:"function_call,omitempty"`
 			ToolCalls        []ToolCall                 `json:"tool_calls,omitempty"`
 			ToolCallID       string                     `json:"tool_call_id,omitempty"`
+			Audio            *Audio                     `json:"audio,omitempty"`
 			ExtraFields      map[string]json.RawMessage `json:"-"`
 		}(m)
 		return json.Marshal(msg)
@@ -171,6 +182,7 @@ func (m ChatCompletionMessage) MarshalJSON() ([]byte, error) {
 		FunctionCall     *FunctionCall              `json:"function_call,omitempty"`
 		ToolCalls        []ToolCall                 `json:"tool_calls,omitempty"`
 		ToolCallID       string                     `json:"tool_call_id,omitempty"`
+		Audio            *Audio                     `json:"audio,omitempty"`
 		ExtraFields      map[string]json.RawMessage `json:"-"`
 	}(m)
 	return json.Marshal(msg)
@@ -187,6 +199,7 @@ func (m *ChatCompletionMessage) UnmarshalJSON(bs []byte) error {
 		FunctionCall     *FunctionCall              `json:"function_call,omitempty"`
 		ToolCalls        []ToolCall                 `json:"tool_calls,omitempty"`
 		ToolCallID       string                     `json:"tool_call_id,omitempty"`
+		Audio            *Audio                     `json:"audio,omitempty"`
 		ExtraFields      map[string]json.RawMessage `json:"-"`
 	}{}
 
@@ -212,6 +225,7 @@ func (m *ChatCompletionMessage) UnmarshalJSON(bs []byte) error {
 		FunctionCall     *FunctionCall              `json:"function_call,omitempty"`
 		ToolCalls        []ToolCall                 `json:"tool_calls,omitempty"`
 		ToolCallID       string                     `json:"tool_call_id,omitempty"`
+		Audio            *Audio                     `json:"audio,omitempty"`
 		ExtraFields      map[string]json.RawMessage `json:"-"`
 	}{}
 	if err := json.Unmarshal(bs, &multiMsg); err != nil {

@@ -23,19 +23,22 @@ type ChatCompletionStreamChoiceDelta struct {
 	// - https://api-docs.deepseek.com/api/create-chat-completion#responses
 	ReasoningContent string `json:"reasoning_content,omitempty"`
 
+	// Audio is the audio response from the model, returned only when the audio output modality is requested.
+	Audio *Audio `json:"audio,omitempty"`
+
 	ExtraFields map[string]json.RawMessage `json:"-"`
 }
 
 func (c *ChatCompletionStreamChoiceDelta) UnmarshalJSON(bs []byte) error {
 	msg := struct {
-		Content          string        `json:"content,omitempty"`
-		Role             string        `json:"role,omitempty"`
-		FunctionCall     *FunctionCall `json:"function_call,omitempty"`
-		ToolCalls        []ToolCall    `json:"tool_calls,omitempty"`
-		Refusal          string        `json:"refusal,omitempty"`
-		ReasoningContent string        `json:"reasoning_content,omitempty"`
-
-		ExtraFields map[string]json.RawMessage `json:"-"`
+		Content          string                     `json:"content,omitempty"`
+		Role             string                     `json:"role,omitempty"`
+		FunctionCall     *FunctionCall              `json:"function_call,omitempty"`
+		ToolCalls        []ToolCall                 `json:"tool_calls,omitempty"`
+		Refusal          string                     `json:"refusal,omitempty"`
+		ReasoningContent string                     `json:"reasoning_content,omitempty"`
+		Audio            *Audio                     `json:"audio,omitempty"`
+		ExtraFields      map[string]json.RawMessage `json:"-"`
 	}{}
 	err := json.Unmarshal(bs, &msg)
 	if err != nil {
