@@ -95,6 +95,11 @@ type ChatMessageVideoURL struct {
 	URL string `json:"url,omitempty"`
 }
 
+type ChatMessageFileURL struct {
+	URL      string `json:"url,omitempty"`
+	MimeType string `json:"mime_type,omitempty"`
+}
+
 type ChatMessagePartType string
 
 const (
@@ -102,6 +107,7 @@ const (
 	ChatMessagePartTypeImageURL   ChatMessagePartType = "image_url"
 	ChatMessagePartTypeInputAudio ChatMessagePartType = "input_audio"
 	ChatMessagePartTypeVideoURL   ChatMessagePartType = "video_url"
+	ChatMessagePartTypeFileURL    ChatMessagePartType = "file_url"
 )
 
 type ChatMessagePart struct {
@@ -110,6 +116,7 @@ type ChatMessagePart struct {
 	ImageURL   *ChatMessageImageURL   `json:"image_url,omitempty"`
 	InputAudio *ChatMessageInputAudio `json:"input_audio,omitempty"`
 	VideoURL   *ChatMessageVideoURL   `json:"video_url,omitempty"`
+	FileURL    *ChatMessageFileURL    `json:"file_url,omitempty"`
 }
 
 type ChatCompletionMessage struct {
