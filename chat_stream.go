@@ -80,8 +80,13 @@ type ChatCompletionStreamChoice struct {
 	Logprobs             *ChatCompletionStreamChoiceLogprobs `json:"logprobs,omitempty"`
 	FinishReason         FinishReason                        `json:"finish_reason"`
 	ContentFilterResults ContentFilterResults                `json:"content_filter_results,omitempty"`
+	Provider             string                              `json:"provider,omitempty"`
+	Error                *Error                              `json:"error,omitempty"`
 }
-
+type Error struct {
+	Code    string `json:"code,omitempty"`
+	Message string `json:"message,omitempty"`
+}
 type PromptFilterResult struct {
 	Index                int                  `json:"index"`
 	ContentFilterResults ContentFilterResults `json:"content_filter_results,omitempty"`

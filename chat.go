@@ -139,8 +139,7 @@ type ChatCompletionMessage struct {
 	ToolCallID string `json:"tool_call_id,omitempty"`
 
 	// Audio is the audio response from the model, returned only when the audio output modality is requested.
-	Audio *Audio `json:"audio,omitempty"`
-
+	Audio       *Audio                     `json:"audio,omitempty"`
 	ExtraFields map[string]json.RawMessage `json:"-"`
 }
 
@@ -262,11 +261,21 @@ const (
 	ChatCompletionResponseFormatTypeJSONObject ChatCompletionResponseFormatType = "json_object"
 	ChatCompletionResponseFormatTypeJSONSchema ChatCompletionResponseFormatType = "json_schema"
 	ChatCompletionResponseFormatTypeText       ChatCompletionResponseFormatType = "text"
+
+	// ChatCompletionResponseFormatTypePython and ChatCompletionResponseFormatTypeGrammar are
+	// response format types supported by OpenRouter provider only.
+	// Refs: https://openrouter.ai/docs/api-reference/api-reference/chat/send-chat-completion-request.
+	ChatCompletionResponseFormatTypePython  ChatCompletionResponseFormatType = "python"
+	ChatCompletionResponseFormatTypeGrammar ChatCompletionResponseFormatType = "grammar"
 )
 
 type ChatCompletionResponseFormat struct {
 	Type       ChatCompletionResponseFormatType        `json:"type,omitempty"`
 	JSONSchema *ChatCompletionResponseFormatJSONSchema `json:"json_schema,omitempty"`
+
+	// Grammar specifies the response format for openrouter provider only.
+	// When Grammar field is set, the Type field must be set to "grammar".
+	Grammar *string `json:"grammar,omitempty"`
 }
 
 type ChatCompletionResponseFormatJSONSchema struct {
@@ -310,6 +319,11 @@ type ChatCompletionRequestExtensions struct {
 	// ensuring predictable and consistent outputs in scenarios where specific
 	// choices are required.
 	GuidedChoice []string `json:"guided_choice,omitempty"`
+}
+
+type Reasoning struct {
+	Effort  string `json:"effort,omitempty"`
+	Summary string `json:"summary,omitempty"`
 }
 
 // ChatCompletionRequest represents a request structure for chat completion API.
@@ -388,7 +402,32 @@ type ChatCompletionRequest struct {
 	ChatCompletionRequestExtensions
 	// Extra fields to be sent in the request.
 	// Useful for experimental features not yet officially supported.
+
+	// Audio parameters for audio output. Required when audio output is requested with modalities: ["audio"]
+	Audio *AudioConfig `json:"audio,omitempty"`
+
+	// Modalities are output types that you would like the model to generate.
+	// Allowed values: ["text", "audio"]
+	// Default: ["text"]
+	Modalities []string `json:"modalities,omitempty"`
+
+	// Reasoning only for OpenRouter provider api, supports advanced reasoning capabilities,
+	// allowing models to show their internal reasoning process with configurable effort、summary fields levels
+	Reasoning *Reasoning `json:"reasoning,omitempty"`
+
+	// Models only for OpenRouter provider api,
+	// Parameter lets you automatically try other models if the primary model's providers
+	// are down, rate-limited, or refuse to reply due to content moderation
+	Models []string `json:"models,omitempty"`
+
 	extraFields map[string]any
+}
+
+type AudioConfig struct {
+	// Format specifies the output audio format.
+	Format string `json:"format"`
+	// Voice specifies the voice the model uses to respond.
+	Voice string `json:"voice"`
 }
 
 // SetExtraFields adds extra fields to the JSON object.
