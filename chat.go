@@ -535,26 +535,17 @@ type ChatCompletionResponse struct {
 }
 
 func (c *ChatCompletionResponse) UnmarshalJSON(data []byte) error {
-	response := struct {
-		ID                  string                 `json:"id"`
-		Object              string                 `json:"object"`
-		Created             int64                  `json:"created"`
-		Model               string                 `json:"model"`
-		Choices             []ChatCompletionChoice `json:"choices"`
-		Usage               Usage                  `json:"usage"`
-		SystemFingerprint   string                 `json:"system_fingerprint"`
-		PromptFilterResults []PromptFilterResult   `json:"prompt_filter_results,omitempty"`
-		ServiceTier         ServiceTier            `json:"service_tier,omitempty"`
+	h := c.httpHeader
+	type chatCompletionResponse ChatCompletionResponse
 
-		httpHeader
-		RawBody []byte `json:"-"`
-	}{}
+	response := chatCompletionResponse{}
 	err := sonic.Unmarshal(data, &response)
 	if err != nil {
 		return err
 	}
 	response.RawBody = data
-	*c = response
+	*c = ChatCompletionResponse(response)
+	c.httpHeader = h
 	return nil
 }
 

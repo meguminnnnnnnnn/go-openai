@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"reflect"
 
+	"github.com/bytedance/sonic"
+
 	openai "github.com/meguminnnnnnnnn/go-openai/internal"
 )
 
@@ -99,7 +101,23 @@ type ChatCompletionStreamResponse struct {
 	// An optional field that will only be present when you set stream_options: {"include_usage": true} in your request.
 	// When present, it contains a null value except for the last chunk which contains the token usage statistics
 	// for the entire request.
-	Usage *Usage `json:"usage,omitempty"`
+	Usage   *Usage `json:"usage,omitempty"`
+	RawBody []byte `json:"-"`
+}
+
+func (c *ChatCompletionStreamResponse) UnmarshalJSON(data []byte) error {
+	type chatCompletionStreamResponse ChatCompletionStreamResponse
+	response := chatCompletionStreamResponse{}
+
+	err := sonic.Unmarshal(data, &response)
+	if err != nil {
+		return err
+	}
+
+	response.RawBody = data
+	*c = ChatCompletionStreamResponse(response)
+
+	return nil
 }
 
 // ChatCompletionStream
