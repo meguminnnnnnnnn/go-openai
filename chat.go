@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"reflect"
 
+	"github.com/bytedance/sonic"
+
 	openai "github.com/meguminnnnnnnnn/go-openai/internal"
 
 	"github.com/meguminnnnnnnnn/go-openai/jsonschema"
@@ -529,6 +531,22 @@ type ChatCompletionResponse struct {
 	ServiceTier         ServiceTier            `json:"service_tier,omitempty"`
 
 	httpHeader
+	RawBody []byte `json:"-"`
+}
+
+func (c *ChatCompletionResponse) UnmarshalJSON(data []byte) error {
+	h := c.httpHeader
+	type chatCompletionResponse ChatCompletionResponse
+
+	response := chatCompletionResponse{}
+	err := sonic.Unmarshal(data, &response)
+	if err != nil {
+		return err
+	}
+	response.RawBody = data
+	*c = ChatCompletionResponse(response)
+	c.httpHeader = h
+	return nil
 }
 
 // CreateChatCompletion — API call to Create a completion for the chat message.
