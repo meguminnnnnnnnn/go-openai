@@ -1282,11 +1282,123 @@ func TestChatCompletionRequest_UnmarshalJSON(t *testing.T) {
 	}
 }
 
+func TestChatCompletionMessage_MarshalJSON(t *testing.T) {
+	expected := []byte(`{
+  "role": "system",
+  "content": "You are a helpful math tutor.",
+  "name": "name",
+  "signature": "signature xxxxxx",
+  "tool_calls":[
+    {
+      "id": "call_123",
+      "type": "function",
+      "function": {
+        "name": "get_current_weather",
+        "arguments": "{\n  \"location\": \"Seattle, WA\"\n}"
+      },
+      "signature": "signature xxxxxx"
+    }
+  ],
+  "multimodal_contents": [
+    {
+      "type": "text",
+      "text": "ok"
+    },
+    {
+      "type": "text",
+      "text": "Generate a picture of a Shiba Inu dog for you。"
+    },
+    {
+      "type": "inline_data",
+      "inline_data": {
+        "mime_type": "image/png",
+        "data": "iVBI"
+      }
+    }
+  ]
+}`)
+	chatMessage := &openai.ChatCompletionMessage{
+		Role:             "system",
+		Content:          "You are a helpful math tutor.",
+		Refusal:          "",
+		MultiContent:     nil,
+		Name:             "name",
+		ReasoningContent: "",
+		FunctionCall:     nil,
+		ToolCalls: []openai.ToolCall{
+			{
+				ID:       "call_123",
+				Type:     openai.ToolTypeFunction,
+				Function: openai.FunctionCall{Name: "get_current_weather", Arguments: "{\n  \"location\": \"Seattle, WA\"\n}"},
+				ExtraFields: map[string]json.RawMessage{
+					"signature": json.RawMessage(`"signature xxxxxx"`),
+				},
+			},
+		},
+		ToolCallID: "",
+		Audio:      nil,
+		ExtraFields: map[string]json.RawMessage{
+			"signature": json.RawMessage(`"signature xxxxxx"`),
+			"multimodal_contents": json.RawMessage(`[
+    {
+      "type": "text",
+      "text": "ok"
+    },
+    {
+      "type": "text",
+      "text": "Generate a picture of a Shiba Inu dog for you。"
+    },
+    {
+      "type": "inline_data",
+      "inline_data": {
+        "mime_type": "image/png",
+        "data": "iVBI"
+      }
+    }
+  ]`),
+		},
+	}
+	actual, err := json.Marshal(chatMessage)
+	assert.Nil(t, err)
+
+	expectedM := make(map[string]json.RawMessage)
+	err = json.Unmarshal(expected, &expectedM)
+	assert.Nil(t, err)
+	actualM := make(map[string]json.RawMessage)
+	err = json.Unmarshal(actual, &actualM)
+	assert.Nil(t, err)
+
+	assert.Equal(t, expectedM["signature"], actualM["signature"])
+
+	expectedToolCallM := make([]map[string]json.RawMessage, 0)
+	err = json.Unmarshal(expectedM["tool_calls"], &expectedToolCallM)
+	assert.Nil(t, err)
+	actualToolCallM := make([]map[string]json.RawMessage, 0)
+	err = json.Unmarshal(actualM["tool_calls"], &actualToolCallM)
+	assert.Nil(t, err)
+
+	assert.Equal(t, expectedToolCallM[0]["id"], actualToolCallM[0]["id"])
+	assert.Equal(t, expectedToolCallM[0]["type"], actualToolCallM[0]["type"])
+	assert.Equal(t, expectedToolCallM[0]["signature"], actualToolCallM[0]["signature"])
+}
+
 func TestChatCompletionMessage_UnmarshalJSON(t *testing.T) {
 	bs := []byte(`{
   "role": "system",
   "content": "You are a helpful math tutor.",
   "name": "name",
+  "signature": "signature xxxxxx",
+  "tool_calls":[
+    {
+      "id": "call_123",
+      "type": "function",
+      "function": {
+        "name": "get_current_weather",
+        "arguments": "{\n  \"location\": \"Seattle, WA\"\n}"
+      },
+      "signature": "signature xxxxxx"
+    }
+  ],
   "multimodal_contents": [
     {
       "type": "text",
@@ -1313,6 +1425,14 @@ func TestChatCompletionMessage_UnmarshalJSON(t *testing.T) {
 	mContents := make([]map[string]any, 0)
 	err = json.Unmarshal(multimodalContent, &mContents)
 	assert.Nil(t, err)
+	var msgSignature string
+	err = json.Unmarshal(chatMessage.ExtraFields["signature"], &msgSignature)
+	assert.Nil(t, err)
+	assert.Equal(t, "signature xxxxxx", msgSignature)
+	var toolCallSignature string
+	err = json.Unmarshal(chatMessage.ToolCalls[0].ExtraFields["signature"], &toolCallSignature)
+	assert.Nil(t, err)
+	assert.Equal(t, "signature xxxxxx", toolCallSignature)
 
 	assert.Equal(t, mContents, []map[string]any{
 		{"type": "text", "text": "ok"},

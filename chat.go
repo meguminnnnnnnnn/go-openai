@@ -153,57 +153,67 @@ type Audio struct {
 	Transcript string `json:"transcript,omitempty"`
 }
 
+type extraContentMsg struct {
+	Role             string                     `json:"role"`
+	Content          string                     `json:"content,omitempty"`
+	Refusal          string                     `json:"refusal,omitempty"`
+	MultiContent     []ChatMessagePart          `json:"-"`
+	Name             string                     `json:"name,omitempty"`
+	ReasoningContent string                     `json:"reasoning_content,omitempty"`
+	FunctionCall     *FunctionCall              `json:"function_call,omitempty"`
+	ToolCalls        []ToolCall                 `json:"tool_calls,omitempty"`
+	ToolCallID       string                     `json:"tool_call_id,omitempty"`
+	Audio            *Audio                     `json:"audio,omitempty"`
+	ExtraFields      map[string]json.RawMessage `json:"-"`
+}
+
+func (m extraContentMsg) GetExtraFields() map[string]any {
+	ret := make(map[string]any)
+	for k, v := range m.ExtraFields {
+		ret[k] = v
+	}
+	return ret
+}
+
+type extraMultiContentMsg struct {
+	Role             string                     `json:"role"`
+	Content          string                     `json:"-"`
+	Refusal          string                     `json:"refusal,omitempty"`
+	MultiContent     []ChatMessagePart          `json:"content,omitempty"`
+	Name             string                     `json:"name,omitempty"`
+	ReasoningContent string                     `json:"reasoning_content,omitempty"`
+	FunctionCall     *FunctionCall              `json:"function_call,omitempty"`
+	ToolCalls        []ToolCall                 `json:"tool_calls,omitempty"`
+	ToolCallID       string                     `json:"tool_call_id,omitempty"`
+	Audio            *Audio                     `json:"audio,omitempty"`
+	ExtraFields      map[string]json.RawMessage `json:"-"`
+}
+
+func (m extraMultiContentMsg) GetExtraFields() map[string]any {
+	ret := make(map[string]any)
+	for k, v := range m.ExtraFields {
+		ret[k] = v
+	}
+	return ret
+}
+
 func (m ChatCompletionMessage) MarshalJSON() ([]byte, error) {
 	if m.Content != "" && m.MultiContent != nil {
 		return nil, ErrContentFieldsMisused
 	}
+
+	marshaller := openai.JSONMarshaller{}
 	if len(m.MultiContent) > 0 {
-		msg := struct {
-			Role             string                     `json:"role"`
-			Content          string                     `json:"-"`
-			Refusal          string                     `json:"refusal,omitempty"`
-			MultiContent     []ChatMessagePart          `json:"content,omitempty"`
-			Name             string                     `json:"name,omitempty"`
-			ReasoningContent string                     `json:"reasoning_content,omitempty"`
-			FunctionCall     *FunctionCall              `json:"function_call,omitempty"`
-			ToolCalls        []ToolCall                 `json:"tool_calls,omitempty"`
-			ToolCallID       string                     `json:"tool_call_id,omitempty"`
-			Audio            *Audio                     `json:"audio,omitempty"`
-			ExtraFields      map[string]json.RawMessage `json:"-"`
-		}(m)
-		return json.Marshal(msg)
+		msg := extraMultiContentMsg(m)
+		return marshaller.Marshal(msg)
 	}
 
-	msg := struct {
-		Role             string                     `json:"role"`
-		Content          string                     `json:"content,omitempty"`
-		Refusal          string                     `json:"refusal,omitempty"`
-		MultiContent     []ChatMessagePart          `json:"-"`
-		Name             string                     `json:"name,omitempty"`
-		ReasoningContent string                     `json:"reasoning_content,omitempty"`
-		FunctionCall     *FunctionCall              `json:"function_call,omitempty"`
-		ToolCalls        []ToolCall                 `json:"tool_calls,omitempty"`
-		ToolCallID       string                     `json:"tool_call_id,omitempty"`
-		Audio            *Audio                     `json:"audio,omitempty"`
-		ExtraFields      map[string]json.RawMessage `json:"-"`
-	}(m)
-	return json.Marshal(msg)
+	msg := extraContentMsg(m)
+	return marshaller.Marshal(msg)
 }
 
 func (m *ChatCompletionMessage) UnmarshalJSON(bs []byte) error {
-	msg := struct {
-		Role             string `json:"role"`
-		Content          string `json:"content"`
-		Refusal          string `json:"refusal,omitempty"`
-		MultiContent     []ChatMessagePart
-		Name             string                     `json:"name,omitempty"`
-		ReasoningContent string                     `json:"reasoning_content,omitempty"`
-		FunctionCall     *FunctionCall              `json:"function_call,omitempty"`
-		ToolCalls        []ToolCall                 `json:"tool_calls,omitempty"`
-		ToolCallID       string                     `json:"tool_call_id,omitempty"`
-		Audio            *Audio                     `json:"audio,omitempty"`
-		ExtraFields      map[string]json.RawMessage `json:"-"`
-	}{}
+	msg := extraContentMsg{}
 
 	if err := json.Unmarshal(bs, &msg); err == nil {
 		*m = ChatCompletionMessage(msg)
@@ -217,19 +227,7 @@ func (m *ChatCompletionMessage) UnmarshalJSON(bs []byte) error {
 		return nil
 	}
 
-	multiMsg := struct {
-		Role             string `json:"role"`
-		Content          string
-		Refusal          string                     `json:"refusal,omitempty"`
-		MultiContent     []ChatMessagePart          `json:"content"`
-		Name             string                     `json:"name,omitempty"`
-		ReasoningContent string                     `json:"reasoning_content,omitempty"`
-		FunctionCall     *FunctionCall              `json:"function_call,omitempty"`
-		ToolCalls        []ToolCall                 `json:"tool_calls,omitempty"`
-		ToolCallID       string                     `json:"tool_call_id,omitempty"`
-		Audio            *Audio                     `json:"audio,omitempty"`
-		ExtraFields      map[string]json.RawMessage `json:"-"`
-	}{}
+	multiMsg := extraMultiContentMsg{}
 	if err := json.Unmarshal(bs, &multiMsg); err != nil {
 		return err
 	}
@@ -250,6 +248,48 @@ type ToolCall struct {
 	ID       string       `json:"id,omitempty"`
 	Type     ToolType     `json:"type"`
 	Function FunctionCall `json:"function"`
+
+	ExtraFields map[string]json.RawMessage `json:"-"`
+}
+
+type extraToolCall struct {
+	// Index is not nil only in chat completion chunk object
+	Index    *int         `json:"index,omitempty"`
+	ID       string       `json:"id,omitempty"`
+	Type     ToolType     `json:"type"`
+	Function FunctionCall `json:"function"`
+
+	ExtraFields map[string]json.RawMessage `json:"-"`
+}
+
+func (t extraToolCall) GetExtraFields() map[string]any {
+	ret := make(map[string]any)
+	for k, v := range t.ExtraFields {
+		ret[k] = v
+	}
+	return ret
+}
+
+func (t ToolCall) MarshalJSON() ([]byte, error) {
+	tc := extraToolCall(t)
+	marshaller := openai.JSONMarshaller{}
+	return marshaller.Marshal(tc)
+}
+
+func (t *ToolCall) UnmarshalJSON(bs []byte) error {
+	tc := extraToolCall{}
+	if err := json.Unmarshal(bs, &tc); err != nil {
+		return err
+	}
+	*t = ToolCall(tc)
+
+	extra, err := openai.UnmarshalExtraFields(reflect.TypeOf(t), bs)
+	if err != nil {
+		return err
+	}
+
+	t.ExtraFields = extra
+	return nil
 }
 
 type FunctionCall struct {
