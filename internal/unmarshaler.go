@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-
-	"github.com/bytedance/sonic"
 )
 
 type Unmarshaler interface {
@@ -21,7 +19,7 @@ func (jm *JSONUnmarshaler) Unmarshal(data []byte, v any) error {
 
 func UnmarshalExtraFields(typ reflect.Type, data []byte) (map[string]json.RawMessage, error) {
 	m := make(map[string]json.RawMessage)
-	if err := sonic.Unmarshal(data, &m); err != nil {
+	if err := json.Unmarshal(data, &m); err != nil {
 		return nil, err
 	}
 
