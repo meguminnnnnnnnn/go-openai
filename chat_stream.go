@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/bytedance/sonic"
-
 	openai "github.com/meguminnnnnnnnn/go-openai/internal"
 )
 
@@ -109,7 +107,7 @@ func (c *ChatCompletionStreamResponse) UnmarshalJSON(data []byte) error {
 	type chatCompletionStreamResponse ChatCompletionStreamResponse
 	response := chatCompletionStreamResponse{}
 
-	err := sonic.Unmarshal(data, &response)
+	err := json.Unmarshal(data, &response)
 	if err != nil {
 		return err
 	}
