@@ -86,6 +86,7 @@ const (
 type ChatMessageImageURL struct {
 	URL    string         `json:"url,omitempty"`
 	Detail ImageURLDetail `json:"detail,omitempty"`
+	Extra  map[string]any `json:"extra,omitempty"`
 }
 
 type ChatMessageInputAudio struct {
