@@ -903,6 +903,42 @@ func TestMultipartChatMessageSerialization(t *testing.T) {
 	}
 }
 
+func TestToolMessageWithEmptyContent(t *testing.T) {
+	msg := openai.ChatCompletionMessage{
+		Role:       openai.ChatMessageRoleTool,
+		Content:    "",
+		ToolCallID: "toolu_xxx",
+	}
+	data, err := json.Marshal(msg)
+	checks.NoError(t, err)
+
+	expected := `{"role":"tool","content":"","tool_call_id":"toolu_xxx"}`
+	if string(data) != expected {
+		t.Errorf("tool message with empty content: got %s, want %s", string(data), expected)
+	}
+
+	msg.Content = "some result"
+	data, err = json.Marshal(msg)
+	checks.NoError(t, err)
+
+	expected = `{"role":"tool","content":"some result","tool_call_id":"toolu_xxx"}`
+	if string(data) != expected {
+		t.Errorf("tool message with non-empty content: got %s, want %s", string(data), expected)
+	}
+
+	userMsg := openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleUser,
+		Content: "",
+	}
+	data, err = json.Marshal(userMsg)
+	checks.NoError(t, err)
+
+	expected = `{"role":"user"}`
+	if string(data) != expected {
+		t.Errorf("user message with empty content should omit content: got %s, want %s", string(data), expected)
+	}
+}
+
 // handleChatCompletionEndpoint Handles the ChatGPT completion endpoint by the test server.
 func handleChatCompletionEndpoint(w http.ResponseWriter, r *http.Request) {
 	var err error
