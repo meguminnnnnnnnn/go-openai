@@ -141,6 +141,8 @@ type ChatCompletionMessage struct {
 	// For Role=tool prompts this should be set to the ID given in the assistant's prior request to call a tool.
 	ToolCallID string `json:"tool_call_id,omitempty"`
 
+	ToolCallsContent string `json:"tool_calls_content,omitempty"`
+
 	// Audio is the audio response from the model, returned only when the audio output modality is requested.
 	Audio *Audio `json:"audio,omitempty"`
 
