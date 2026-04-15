@@ -99,7 +99,7 @@ type ChatMessageVideoURL struct {
 
 type ChatMessageFile struct {
 	FileData string `json:"file_data,omitempty"`
-	FileName string `json:"file_name,omitempty"`
+	FileName string `json:"filename,omitempty"`
 }
 
 type ChatMessagePartType string
