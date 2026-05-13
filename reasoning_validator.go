@@ -47,9 +47,9 @@ func (v *ReasoningValidator) Validate(request ChatCompletionRequest) error {
 		return nil
 	}
 
-	if err := v.validateReasoningModelParams(request); err != nil {
-		return err
-	}
+	//if err := v.validateReasoningModelParams(request); err != nil {
+	//	return err
+	//}
 
 	return nil
 }
