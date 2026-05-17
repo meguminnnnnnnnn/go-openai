@@ -16,6 +16,7 @@ type APIError struct {
 	HTTPStatus     string      `json:"-"`
 	HTTPStatusCode int         `json:"-"`
 	InnerError     *InnerError `json:"innererror,omitempty"`
+	Body           []byte      `json:"-"`
 }
 
 // InnerError Azure Content filtering. Only valid for Azure OpenAI Service.
