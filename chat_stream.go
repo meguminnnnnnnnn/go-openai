@@ -82,6 +82,8 @@ type ChatCompletionStreamChoice struct {
 	Logprobs             *ChatCompletionStreamChoiceLogprobs `json:"logprobs,omitempty"`
 	FinishReason         FinishReason                        `json:"finish_reason"`
 	ContentFilterResults ContentFilterResults                `json:"content_filter_results,omitempty"`
+
+	Usage *Usage `json:"usage,omitempty"`
 }
 
 type PromptFilterResult struct {
