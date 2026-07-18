@@ -76,3 +76,32 @@ func TestStreamReaderRecvRaw(t *testing.T) {
 		t.Fatalf("Did not return raw line: %v", string(rawLine))
 	}
 }
+
+func TestStreamReaderRecvRawJoinsMultilineSSEData(t *testing.T) {
+	stream := &streamReader[ChatCompletionStreamResponse]{
+		reader: bufio.NewReader(bytes.NewReader([]byte("data: {\"key\":\n" +
+			"data: \"value\"}\n\n"))),
+	}
+	rawLine, err := stream.RecvRaw()
+	if err != nil {
+		t.Fatalf("Did not return multiline SSE data: %v", err)
+	}
+	if !bytes.Equal(rawLine, []byte("{\"key\":\n\"value\"}")) {
+		t.Fatalf("Did not join multiline SSE data: %q", string(rawLine))
+	}
+}
+
+func TestStreamReaderRecvJoinsMultilineSSEData(t *testing.T) {
+	stream := &streamReader[ChatCompletionStreamResponse]{
+		reader: bufio.NewReader(bytes.NewReader([]byte("data: {\"id\":\"chatcmpl-test\",\n" +
+			"data: \"choices\":[]}\n\n"))),
+		unmarshaler: &utils.JSONUnmarshaler{},
+	}
+	response, err := stream.Recv()
+	if err != nil {
+		t.Fatalf("Did not decode multiline SSE data: %v", err)
+	}
+	if response.ID != "chatcmpl-test" {
+		t.Fatalf("Decoded response ID %q, want %q", response.ID, "chatcmpl-test")
+	}
+}
