@@ -3,6 +3,7 @@ package openai
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,8 +13,7 @@ import (
 )
 
 var (
-	headerData  = regexp.MustCompile(`^data:\s*`)
-	errorPrefix = regexp.MustCompile(`^data:\s*{"error":`)
+	headerData = regexp.MustCompile(`^data:\s*`)
 )
 
 type streamable interface {
@@ -55,14 +55,37 @@ func (stream *streamReader[T]) RecvRaw() ([]byte, error) {
 
 //nolint:gocognit
 func (stream *streamReader[T]) processLines() ([]byte, error) {
-	var (
-		emptyMessagesCount uint
-		hasErrorPrefix     bool
-	)
+	var emptyMessagesCount uint
+	var eventData bytes.Buffer
 
 	for {
 		rawLine, readErr := stream.reader.ReadBytes('\n')
-		if readErr != nil || hasErrorPrefix {
+		noSpaceLine := bytes.TrimSpace(rawLine)
+
+		if len(noSpaceLine) == 0 {
+			if eventData.Len() > 0 {
+				return stream.processEvent(eventData.Bytes())
+			}
+			if err := stream.errAccumulator.Write(noSpaceLine); err != nil {
+				return nil, err
+			}
+		} else if headerData.Match(noSpaceLine) {
+			dataLine := headerData.ReplaceAll(noSpaceLine, nil)
+			if eventData.Len() > 0 {
+				eventData.WriteByte('\n')
+			}
+			eventData.Write(dataLine)
+		} else {
+			writeErr := stream.errAccumulator.Write(noSpaceLine)
+			if writeErr != nil {
+				return nil, writeErr
+			}
+		}
+
+		if readErr != nil {
+			if errors.Is(readErr, io.EOF) && eventData.Len() > 0 {
+				return stream.processEvent(eventData.Bytes())
+			}
 			respErr := stream.unmarshalError()
 			if respErr != nil {
 				return nil, fmt.Errorf("error, %w", respErr.Error)
@@ -70,34 +93,29 @@ func (stream *streamReader[T]) processLines() ([]byte, error) {
 			return nil, readErr
 		}
 
-		noSpaceLine := bytes.TrimSpace(rawLine)
-		if errorPrefix.Match(noSpaceLine) {
-			hasErrorPrefix = true
-		}
-		if !headerData.Match(noSpaceLine) || hasErrorPrefix {
-			if hasErrorPrefix {
-				noSpaceLine = headerData.ReplaceAll(noSpaceLine, nil)
-			}
-			writeErr := stream.errAccumulator.Write(noSpaceLine)
-			if writeErr != nil {
-				return nil, writeErr
-			}
+		if len(noSpaceLine) == 0 || !headerData.Match(noSpaceLine) {
 			emptyMessagesCount++
 			if emptyMessagesCount > stream.emptyMessagesLimit {
 				return nil, ErrTooManyEmptyStreamMessages
 			}
-
-			continue
 		}
-
-		noPrefixLine := headerData.ReplaceAll(noSpaceLine, nil)
-		if string(noPrefixLine) == "[DONE]" {
-			stream.isFinished = true
-			return nil, io.EOF
-		}
-
-		return noPrefixLine, nil
 	}
+}
+
+func (stream *streamReader[T]) processEvent(data []byte) ([]byte, error) {
+	if string(data) == "[DONE]" {
+		stream.isFinished = true
+		return nil, io.EOF
+	}
+	if bytes.HasPrefix(data, []byte(`{"error":`)) {
+		if err := stream.errAccumulator.Write(data); err != nil {
+			return nil, err
+		}
+		if respErr := stream.unmarshalError(); respErr != nil {
+			return nil, fmt.Errorf("error, %w", respErr.Error)
+		}
+	}
+	return data, nil
 }
 
 func (stream *streamReader[T]) unmarshalError() (errResp *ErrorResponse) {
