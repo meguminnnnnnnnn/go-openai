@@ -3,6 +3,7 @@ package openai
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -28,6 +29,11 @@ type streamReader[T streamable] struct {
 	response       *http.Response
 	errAccumulator utils.ErrorAccumulator
 	unmarshaler    utils.Unmarshaler
+
+	// dataBuf assembles the payload of the SSE event currently being read.
+	// Per the SSE spec an event may span multiple "data:" lines, which are
+	// joined with "\n" and dispatched on the terminating blank line (or EOF).
+	dataBuf []byte
 
 	httpHeader
 }
@@ -62,7 +68,21 @@ func (stream *streamReader[T]) processLines() ([]byte, error) {
 
 	for {
 		rawLine, readErr := stream.reader.ReadBytes('\n')
-		if readErr != nil || hasErrorPrefix {
+		if readErr != nil {
+			// Per the SSE spec, an event still pending when the stream is
+			// closed must be dispatched before EOF is reported.
+			if errors.Is(readErr, io.EOF) && len(stream.dataBuf) > 0 {
+				event := stream.dataBuf
+				stream.dataBuf = nil
+				return event, nil
+			}
+			respErr := stream.unmarshalError()
+			if respErr != nil {
+				return nil, fmt.Errorf("error, %w", respErr.Error)
+			}
+			return nil, readErr
+		}
+		if hasErrorPrefix {
 			respErr := stream.unmarshalError()
 			if respErr != nil {
 				return nil, fmt.Errorf("error, %w", respErr.Error)
@@ -75,6 +95,12 @@ func (stream *streamReader[T]) processLines() ([]byte, error) {
 			hasErrorPrefix = true
 		}
 		if !headerData.Match(noSpaceLine) || hasErrorPrefix {
+			if !hasErrorPrefix && len(stream.dataBuf) > 0 {
+				// Blank line terminates the event being assembled: dispatch it.
+				event := stream.dataBuf
+				stream.dataBuf = nil
+				return event, nil
+			}
 			if hasErrorPrefix {
 				noSpaceLine = headerData.ReplaceAll(noSpaceLine, nil)
 			}
@@ -96,7 +122,12 @@ func (stream *streamReader[T]) processLines() ([]byte, error) {
 			return nil, io.EOF
 		}
 
-		return noPrefixLine, nil
+		// Accumulate the payload line; consecutive "data:" lines of the same
+		// event are joined with "\n" and returned together at the boundary.
+		if len(stream.dataBuf) > 0 {
+			stream.dataBuf = append(stream.dataBuf, '\n')
+		}
+		stream.dataBuf = append(stream.dataBuf, noPrefixLine...)
 	}
 }
 
