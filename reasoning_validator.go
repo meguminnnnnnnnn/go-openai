@@ -47,33 +47,5 @@ func (v *ReasoningValidator) Validate(request ChatCompletionRequest) error {
 		return nil
 	}
 
-	//if err := v.validateReasoningModelParams(request); err != nil {
-	//	return err
-	//}
-
-	return nil
-}
-
-// validateReasoningModelParams checks reasoning model parameters.
-func (v *ReasoningValidator) validateReasoningModelParams(request ChatCompletionRequest) error {
-	if request.LogProbs {
-		return ErrReasoningModelLimitationsLogprobs
-	}
-	if request.Temperature != nil {
-		return ErrReasoningModelLimitationsOther
-	}
-	if request.TopP > 0 && request.TopP != 1 {
-		return ErrReasoningModelLimitationsOther
-	}
-	if request.N > 0 && request.N != 1 {
-		return ErrReasoningModelLimitationsOther
-	}
-	if request.PresencePenalty > 0 {
-		return ErrReasoningModelLimitationsOther
-	}
-	if request.FrequencyPenalty > 0 {
-		return ErrReasoningModelLimitationsOther
-	}
-
 	return nil
 }
