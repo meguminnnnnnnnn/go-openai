@@ -336,6 +336,7 @@ func (c *Client) handleErrorResp(resp *http.Response) error {
 
 	errRes.Error.HTTPStatus = resp.Status
 	errRes.Error.HTTPStatusCode = resp.StatusCode
+	errRes.Error.Body = body
 	return errRes.Error
 }
 
